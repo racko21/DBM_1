@@ -15,4 +15,8 @@ with psycopg.connect("dbname=racko21 user=racko21") as conn:
                 a2 TEXT,
                 a3 TEXT)
             """)
-        cur.executemany(""")
+        cur.executemany(
+            "INSERT INTO H_Toy (a1, a2, a3) VALUES( %s, %s, %s )",
+            data
+        )
+        conn.commit
