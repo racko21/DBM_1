@@ -1,10 +1,30 @@
-import psycopg
+import psycopg2
 import argparse
+
+import psycopg2
+
+def get_postgres_connection():
+    try:
+        conn = psycopg2.connect(
+            dbname="postgres",
+            user="postgres",
+            password="zoesair12",
+            host="localhost",
+            port="5432"
+        )
+        print("Verbindung erfolgreich!")
+        return conn
+    except Exception as e:
+        print(f"Fehler bei der Verbindung: {e}")
+        return None
+
+
+
 
 # Horizontal zu Vertikal (H2V) umwandeln
 def h2v(table_name):
     try:
-        conn = psycopg.connect("dbname=postgres user=postgres")
+        conn = get_postgres_connection()
         cur = conn.cursor()
 
         # Vertikale Tabellen löschen, falls sie existieren
@@ -72,7 +92,7 @@ def h2v(table_name):
 # Vertikal zu Horizontal (V2H) umwandeln
 def v2h(table_name):
     try:
-        conn = psycopg.connect("dbname=postgres user=postgres")
+        conn = psycopg2.connect("dbname=postgres user=postgres")
         cur = conn.cursor()
 
         # Löschen der Tabelle H_VIEW, falls sie existiert
@@ -96,7 +116,7 @@ def v2h(table_name):
         # Erstellen der Sicht H_VIEW
         cur.execute(create_view_query)
 
-        print("\nV2H-Operator erfolgreich ausgeführt. Sicht H_VIEW wurde erstellt.")
+        print("\nv2h-Operator erfolgreich ausgeführt. Sicht H_VIEW wurde erstellt.")
 
         conn.commit()
         cur.close()
@@ -108,7 +128,7 @@ def v2h(table_name):
 # Überprüft, ob H_toy und H_VIEW identisch sind
 def checkCorrectness():
     try:
-        conn = psycopg.connect("dbname=postgres user=postgres")
+        conn = psycopg2.connect("dbname=postgres user=postgres")
         cur = conn.cursor()
 
         # Abrufen der originalen Daten aus H_toy
@@ -133,13 +153,13 @@ def checkCorrectness():
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Datenbankoperationen")
-    parser.add_argument('operation', choices=['H2V', 'V2H', 'check'], help="Wählen Sie die Operation: H2V, V2H oder check")
+    parser.add_argument('operation', choices=['h2v', 'v2h', 'check'], help="Wählen Sie die Operation: h2v, v2h oder check")
     parser.add_argument('table_name', help="Name der Tabelle, auf die die Operation angewendet werden soll")
     args = parser.parse_args()
 
-    if args.operation == 'H2V':
+    if args.operation == 'h2v':
         h2v(args.table_name)
-    elif args.operation == 'V2H':
+    elif args.operation == 'v2h':
         v2h(args.table_name)
     elif args.operation == 'check':
         checkCorrectness()
