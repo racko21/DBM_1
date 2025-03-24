@@ -2,7 +2,7 @@ import psycopg
 import argparse
 
 # Horizontal zu Vertikal (H2V) umwandeln
-def H2V(table_name):
+def h2v(table_name):
     try:
         conn = psycopg.connect("dbname=postgres user=postgres")
         cur = conn.cursor()
@@ -70,7 +70,7 @@ def H2V(table_name):
         print(f"Fehler bei der Ausführung des H2V-Operators: {e}")
 
 # Vertikal zu Horizontal (V2H) umwandeln
-def V2H(table_name):
+def v2h(table_name):
     try:
         conn = psycopg.connect("dbname=postgres user=postgres")
         cur = conn.cursor()
@@ -138,8 +138,8 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     if args.operation == 'H2V':
-        H2V(args.table_name)
+        h2v(args.table_name)
     elif args.operation == 'V2H':
-        V2H(args.table_name)
+        v2h(args.table_name)
     elif args.operation == 'check':
         checkCorrectness()
