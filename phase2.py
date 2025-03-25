@@ -1,8 +1,18 @@
 import psycopg
 import argparse
 import config
-
-import psycopg2
+# import psycopg2
+#
+# create or replace view h2v_toy as
+#       select  o.o1, 
+#               v1.value as a1, 
+#               v2.value as a2, 
+#               v3.value as a3 
+#           from (select distinct o1 from v_toy) o 
+#           left join v_toy as v1 on o.o1 = v1.o1 and v1.attribute ='a1' 
+#           left join v_toy as v2 on o.o1 = v2.o1 and v2.attribute = 'a2' 
+#           left join v_toy as v3 on o.o1 = v3.o1 and v3.attribute = 'a3' 
+#           order by o1;
 
 # def get_postgres_connection():
 #     try:
@@ -106,13 +116,14 @@ def v2h(table_name):
         attributes = [row[0] for row in cur.fetchall()]
 
         # Dynamische Erstellung der SELECT-Abfrage für die Sicht
-        create_view_query = f"CREATE OR REPLACE VIEW H_VIEW AS SELECT H.oid"
-        for attribute in attributes:
-            create_view_query += f", MAX(CASE WHEN V.attribute = '{attribute}' THEN V.value END) AS {attribute}"
+        create_view_query = f"CREATE OR REPLACE VIEW H_VIEW AS SELECT o.oid"
+        for index, attribute in enumerate(attributes, start=1):
+            create_view_query += f", v{index}.value AS {attribute}"
 
         # LEFT JOIN mit der ursprünglichen Tabelle H_toy
-        create_view_query += f" FROM H_toy H LEFT JOIN {table_name} V ON H.oid = V.oid"
-        create_view_query += " GROUP BY H.oid ORDER BY H.oid ASC;"
+        create_view_query += f" FROM (SELECT DISTINCT oid FROM {table_name}) o"
+        for index, attribute in enumerate(attributes, start=1):
+            create_view_query += f" LEFT JOIN {table_name} as v{index} on o.oid=v{index}.oid and v{index}.attribute='{attribute}'"
 
         # Erstellen der Sicht H_VIEW
         cur.execute(create_view_query)

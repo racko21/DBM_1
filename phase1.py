@@ -38,5 +38,5 @@ with psycopg.connect("dbname=racko21 user=racko21") as conn:
 # racko21=# create view v_toy_int as
 # select * from v_toy
 # where key = 'a3';
-#                                  ^
+#
 # racko21=# create view v_toy_all as select * from v_toy_int union all select * from v_toy_string order by key;
