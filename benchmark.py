@@ -10,16 +10,6 @@ H_sizes = [4000, 8000, 1000]
 A_counts = [5, 10, 15]
 sparsities = [0.5, 0.75, 0.875]
 
-def drop_tables_and_views():
-    """Löscht bestehende Tabellen und Views, um einen sauberen Start zu gewährleisten."""
-    conn = psycopg.connect(f"dbname={config.DB_NAME} user={config.DB_USER}")
-    conn.autocommit = True
-    with conn.cursor() as cur:
-        cur.execute("DROP TABLE IF EXISTS H CASCADE")
-        cur.execute("DROP VIEW IF EXISTS V_all CASCADE")
-        cur.execute("DROP VIEW IF EXISTS H_view CASCADE")
-    conn.close()
-
 def measure_conversion(command_args):
     """Misst die Dauer eines Umwandlungsaufrufs (z.B. h2v oder v2h) über subprocess."""
     start_time = time.time()
@@ -60,9 +50,6 @@ def main():
     for H in H_sizes:
         for A in A_counts:
             for S in sparsities:
-                # Frischen Zustand herstellen: Vorherige Tabellen und Views löschen
-                drop_tables_and_views()
-
                 # 1. Tabelle H erzeugen
                 subprocess.run(
                     ["python", "generate.py", str(H), str(S), str(A)],
