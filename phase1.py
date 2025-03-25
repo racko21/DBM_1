@@ -1,4 +1,5 @@
 import psycopg
+import config
 
 data = [
     ("a", "b", None),
@@ -6,11 +7,12 @@ data = [
     (None, None, "3"),
     (None, None, None)
 ]
-with psycopg.connect("dbname=racko21 user=racko21") as conn:
+with psycopg.connect(f"dbname={config.DB_NAME} user={config.DB_USER}") as conn:
     with conn.cursor() as cur:
+        cur.execute("drop table if exists h_toy cascade;")
         cur.execute("""
             CREATE TABLE H_toy (
-                o1 serial PRIMARY KEY,
+                oid serial PRIMARY KEY,
                 a1 TEXT,
                 a2 TEXT,
                 a3 TEXT)

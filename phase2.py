@@ -4,14 +4,14 @@ import config
 # import psycopg2
 #
 # create or replace view h2v_toy as
-#       select  o.o1, 
-#               v1.value as a1, 
-#               v2.value as a2, 
-#               v3.value as a3 
-#           from (select distinct o1 from v_toy) o 
-#           left join v_toy as v1 on o.o1 = v1.o1 and v1.attribute ='a1' 
-#           left join v_toy as v2 on o.o1 = v2.o1 and v2.attribute = 'a2' 
-#           left join v_toy as v3 on o.o1 = v3.o1 and v3.attribute = 'a3' 
+#       select  o.o1,
+#               v1.value as a1,
+#               v2.value as a2,
+#               v3.value as a3
+#           from (select distinct o1 from v_toy) o
+#           left join v_toy as v1 on o.o1 = v1.o1 and v1.attribute = 'a1'
+#           left join v_toy as v2 on o.o1 = v2.o1 and v2.attribute = 'a2'
+#           left join v_toy as v3 on o.o1 = v3.o1 and v3.attribute = 'a3'
 #           order by o1;
 
 # def get_postgres_connection():
@@ -87,7 +87,7 @@ def h2v(table_name):
             SELECT oid, attribute, value::VARCHAR(50) AS value FROM V_string
             UNION ALL
             SELECT oid, attribute, value::VARCHAR(50) FROM V_integer
-            ORDER BY oid;
+            ORDER BY attribute;
         """)
 
         print("\nH2V-Operator erfolgreich ausgeführt. Tabellen V_string und V_integer wurden erstellt und befüllt.")
@@ -107,7 +107,7 @@ def v2h(table_name):
         cur = conn.cursor()
 
         # Löschen der Tabelle H_VIEW, falls sie existiert
-        cur.execute("DROP TABLE IF EXISTS H_VIEW CASCADE;")
+        # cur.execute("DROP TABLE IF EXISTS H_VIEW CASCADE;")
         # Löschen der Sicht H_VIEW, falls sie existiert
         cur.execute("DROP VIEW IF EXISTS H_VIEW CASCADE;")
 
@@ -124,6 +124,7 @@ def v2h(table_name):
         create_view_query += f" FROM (SELECT DISTINCT oid FROM {table_name}) o"
         for index, attribute in enumerate(attributes, start=1):
             create_view_query += f" LEFT JOIN {table_name} as v{index} on o.oid=v{index}.oid and v{index}.attribute='{attribute}'"
+        create_view_query += "order by oid;"
 
         # Erstellen der Sicht H_VIEW
         cur.execute(create_view_query)
