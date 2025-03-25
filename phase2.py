@@ -1,10 +1,11 @@
 import psycopg
 import argparse
+import config
 
 # Horizontal zu Vertikal (H2V) umwandeln
 def h2v(table_name):
     try:
-        conn = psycopg.connect("dbname=postgres user=postgres")
+        conn = psycopg.connect(f"dbname={config.DB_NAME} user={config.DB_USER}")
         cur = conn.cursor()
 
         # Vertikale Tabellen löschen, falls sie existieren
@@ -12,8 +13,8 @@ def h2v(table_name):
         cur.execute("DROP TABLE IF EXISTS V_integer CASCADE;")
 
         # Erstellen der vertikalen Tabellen für String- und Integer-Werte
-        cur.execute("CREATE TABLE V_string (oid INTEGER, attribute VARCHAR(50), value VARCHAR(50));")
-        cur.execute("CREATE TABLE V_integer (oid INTEGER, attribute VARCHAR(50), value INTEGER);")
+        cur.execute("CREATE TABLE V_string (oid INTEGER, attribute TEXT, value TEXT);")
+        cur.execute("CREATE TABLE V_integer (oid INTEGER, attribute TEXT, value INTEGER);")
 
         # Abfragen der Metadaten der horizontalen Tabelle, um die Spaltennamen und Datentypen zu erhalten
         cur.execute(f"SELECT column_name, data_type FROM information_schema.columns WHERE table_name = '{table_name.lower()}';")
@@ -72,7 +73,7 @@ def h2v(table_name):
 # Vertikal zu Horizontal (V2H) umwandeln
 def v2h(table_name):
     try:
-        conn = psycopg.connect("dbname=postgres user=postgres")
+        conn = psycopg.connect(f"dbname={config.DB_NAME} user={config.DB_USER}")
         cur = conn.cursor()
 
         # Löschen der Tabelle H_VIEW, falls sie existiert
@@ -108,14 +109,14 @@ def v2h(table_name):
 # Überprüft, ob H_toy und H_VIEW identisch sind
 def checkCorrectness():
     try:
-        conn = psycopg.connect("dbname=postgres user=postgres")
+        conn = psycopg.connect(f"dbname={config.DB_NAME} user={config.DB_USER}")
         cur = conn.cursor()
 
-        # Abrufen der originalen Daten aus H_toy
-        cur.execute("SELECT * FROM H_toy ORDER BY oid;")
+        # Abrufen der originalen Daten aus H
+        cur.execute("SELECT * FROM H ORDER BY oid;")
         original_data = cur.fetchall()
 
-        # Abrufen der wiederhergestellten Daten aus H_VIEW
+        # Abrufen der wiederhergestellten Daten aus H_VIEW_ALL
         cur.execute("SELECT * FROM H_VIEW ORDER BY oid;")
         recovered_data = cur.fetchall()
 

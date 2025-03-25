@@ -4,9 +4,10 @@ import random
 import math
 import itertools
 import string
+import config
 
 def generate(num_tuples, sparsity, num_attributes):
-    conn = psycopg.connect("dbname=racko21 user=racko21")
+    conn = psycopg.connect(f"dbname={config.DB_NAME} user={config.DB_USER}")
     cur  = conn.cursor()
 
     cur.execute("DROP TABLE IF EXISTS H;")
@@ -21,7 +22,7 @@ def generate(num_tuples, sparsity, num_attributes):
         att_types.append(att_type)
         attributes.append(f"A{i} {att_type}")
 
-    create_table = f"CREATE TABLE H (id SERIAL PRIMARY KEY, {','.join(attributes)});"
+    create_table = f"CREATE TABLE H (oid SERIAL PRIMARY KEY, {','.join(attributes)});"
     cur.execute(create_table)
 
     col_data = [None] * num_attributes
@@ -33,7 +34,7 @@ def generate(num_tuples, sparsity, num_attributes):
             if random.random() >= sparsity:
                 non_null_idx.append(idx)
 
-        distinct_attributes = math.ceil(len(non_null_idx)/5)
+        distinct_attributes = math.ceil(len(non_null_idx)/random.choice([1,2,3,4,5]))
 
         if att_types[col] == "INTEGER":
             pool = list(range(1, distinct_attributes+1))
