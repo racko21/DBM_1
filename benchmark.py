@@ -6,8 +6,8 @@ import psycopg
 import config
 
 # Parameterbereiche
-H_sizes = [4000, 8000, 1000]
-A_counts = [5, 10, 15]
+H_sizes = [4096, 16384, 65536]
+A_counts = [5, 50, 100]
 sparsities = [0.5, 0.75, 0.875]
 
 def measure_conversion(command_args):
@@ -40,7 +40,6 @@ def measure_throughput(query, params_generator, duration):
     return count / duration
 
 def get_random_oid(H):
-    """Liefert einen zufälligen OID-Wert aus dem Bereich 1 bis H."""
     return random.randint(1, H)
 
 def main():

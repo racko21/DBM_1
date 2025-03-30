@@ -14,24 +14,6 @@ import config
 #           left join v_toy as v3 on o.o1 = v3.o1 and v3.attribute = 'a3'
 #           order by o1;
 
-# def get_postgres_connection():
-#     try:
-#         conn = psycopg2.connect(
-#             dbname="postgres",
-#             user="postgres",
-#             password="zoesair12",
-#             host="localhost",
-#             port="5432"
-#         )
-#         print("Verbindung erfolgreich!")
-#         return conn
-#     except Exception as e:
-#         print(f"Fehler bei der Verbindung: {e}")
-#         return None
-
-
-
-
 # Horizontal zu Vertikal (H2V) umwandeln
 def h2v(table_name):
     try:
@@ -80,7 +62,21 @@ def h2v(table_name):
                 ORDER BY oid;
             """
             cur.execute(insert_data)
-
+# Insert a dummy entry for completely empty rows (all non-oid columns are NULL)
+        # If there are no non-oid columns, we treat every row as empty.
+        if (string_columns or integer_columns):
+            condition = " AND ".join([f"{col} IS NULL" for col in (string_columns + integer_columns)])
+        else:
+            condition = "TRUE"
+        
+        empty_query = f"""
+            INSERT INTO V_string (oid, attribute, value)
+            SELECT oid, null, null
+            FROM {table_name}
+            WHERE {condition}
+            ORDER BY oid;
+        """
+        cur.execute(empty_query)
         # Eine Sicht erstellen, die die Daten aus V_string und V_integer kombiniert
         cur.execute("""
             CREATE OR REPLACE VIEW V_all AS
@@ -124,7 +120,8 @@ def v2h(table_name):
         create_view_query += f" FROM (SELECT DISTINCT oid FROM {table_name}) o"
         for index, attribute in enumerate(attributes, start=1):
             create_view_query += f" LEFT JOIN {table_name} as v{index} on o.oid=v{index}.oid and v{index}.attribute='{attribute}'"
-        create_view_query += "order by oid;"
+        if len(attributes) > 1:
+            create_view_query += "order by oid;"
 
         # Erstellen der Sicht H_VIEW
         cur.execute(create_view_query)
