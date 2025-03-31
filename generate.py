@@ -11,6 +11,7 @@ def generate(num_tuples, sparsity, num_attributes):
     cur  = conn.cursor()
 
     cur.execute("DROP TABLE IF EXISTS H;")
+    cur.execute("DROP INDEX IF EXISTS idx_h_oid;")
 
     attributes = []
     att_types  = []
@@ -59,6 +60,21 @@ def generate(num_tuples, sparsity, num_attributes):
         col_names = ", ".join([f"A{j}" for j in range(1, num_attributes+1)])
         insert = f"INSERT INTO H ({col_names}) VALUES ({x});"
         cur.execute(insert, row)
+
+    cur.execute("CREATE INDEX idx_h_oid ON H (oid);")
+    cur.execute("""
+        DO $$
+        DECLARE
+            col record;
+        BEGIN
+            FOR col IN
+                SELECT column_name FROM information_schema.columns
+                WHERE table_name = 'H' AND column_name <> 'oid'
+            LOOP
+                EXECUTE format('CREATE INDEX IF NOT EXISTS idx_hview_%I ON h (%I)', col.column_name, col.column_name);
+            END LOOP;
+        END$$;
+    """)
 
     conn.commit()
     cur.close()

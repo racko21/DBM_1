@@ -82,23 +82,23 @@ def main():
                 qps_v_ii = measure_throughput("SELECT oid FROM V_all WHERE attribute = %s AND value = %s", params_gen_v_ii, 1.0)
                 print(f"{H:5d}  {A:4d}  {S:<6.3f}  {'V_ALL':>6}  {'ii':>5}  {qps_v_ii:16.1f}  {'-':>11}")
 
-                # 5. Umwandlung V_all -> H_view (v2h) und Messung der Dauer
+                # 5. Umwandlung V_all -> H (v2h) und Messung der Dauer
                 conv_time_v2h = measure_conversion(["python", "phase2.py", "v2h", "V_all"])
-                print(f"{H:5d}  {A:4d}  {S:<6.3f}  {'H_VIEW':>6}  {'conv':>5}  {'-':>16}  {conv_time_v2h:11.2f}")
+                print(f"{H:5d}  {A:4d}  {S:<6.3f}  {'H':>6}  {'conv':>5}  {'-':>16}  {conv_time_v2h:11.2f}")
 
-                # 6. Query-Durchsatzmessung auf H_view, Query Typ i: SELECT * FROM H_view WHERE oid = ?
+                # 6. Query-Durchsatzmessung auf H, Query Typ i: SELECT * FROM H WHERE oid = ?
                 def params_gen_h_i():
                     return (get_random_oid(H),)
-                qps_h_i = measure_throughput("SELECT * FROM H_view WHERE oid = %s", params_gen_h_i, 1.0)
-                print(f"{H:5d}  {A:4d}  {S:<6.3f}  {'H_VIEW':>6}  {'i':>5}  {qps_h_i:16.1f}  {'-':>11}")
+                qps_h_i = measure_throughput("SELECT * FROM H WHERE oid = %s", params_gen_h_i, 1.0)
+                print(f"{H:5d}  {A:4d}  {S:<6.3f}  {'H':>6}  {'i':>5}  {qps_h_i:16.1f}  {'-':>11}")
 
-                # 7. Query-Durchsatzmessung auf H_view, Query Typ ii: SELECT oid FROM H_view WHERE <attribute> = ?
-                # Für H_view wird das Attribut direkt als Spaltenname verwendet.
-                # Wir holen 100 zufällige Zeilen aus H_view, um vorhandene Attributwerte zu ermitteln.
+                # 7. Query-Durchsatzmessung auf H, Query Typ ii: SELECT oid FROM H
+                # Für H wird das Attribut direkt als Spaltenname verwendet.
+                # Wir holen 100 zufällige Zeilen aus H, um vorhandene Attributwerte zu ermitteln.
                 conn = psycopg.connect(f"dbname={config.DB_NAME} user={config.DB_USER}")
                 conn.autocommit = True
                 with conn.cursor() as cur:
-                    cur.execute("SELECT * FROM H_view ORDER BY RANDOM() LIMIT 100")
+                    cur.execute("SELECT * FROM H ORDER BY RANDOM() LIMIT 100")
                     rows = cur.fetchall()
                 conn.close()
                 sample_pairs_h = []
@@ -113,8 +113,8 @@ def main():
                 if not sample_pairs_h:
                     sample_pairs_h = [(f"A{random.randint(1, A)}", None) for _ in range(100)]
                 
-                # Für H_view muss der Spaltenname dynamisch in den Query eingebaut werden.
-                def measure_h_view_typeii():
+                # Für H muss der Spaltenname dynamisch in den Query eingebaut werden.
+                def measure_H():
                     conn = psycopg.connect(f"dbname={config.DB_NAME} user={config.DB_USER}")
                     conn.autocommit = True
                     with conn.cursor() as cur:
@@ -122,14 +122,14 @@ def main():
                         count = 0
                         while time.time() < end_time:
                             attr, val = random.choice(sample_pairs_h)
-                            query = f"SELECT oid FROM H_view WHERE {attr} = %s"
+                            query = f"SELECT oid FROM H WHERE {attr} = %s"
                             cur.execute(query, (val,))
                             _ = cur.fetchall()
                             count += 1
                     conn.close()
                     return count / 1.0
-                qps_h_ii = measure_h_view_typeii()
-                print(f"{H:5d}  {A:4d}  {S:<6.3f}  {'H_VIEW':>6}  {'ii':>5}  {qps_h_ii:16.1f}  {'-':>11}")
+                qps_h_ii = measure_H()
+                print(f"{H:5d}  {A:4d}  {S:<6.3f}  {'H':>6}  {'ii':>5}  {qps_h_ii:16.1f}  {'-':>11}")
 
 if __name__ == '__main__':
     main()
