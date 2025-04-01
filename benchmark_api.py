@@ -31,8 +31,8 @@ def measure_throughput(query, params_generator, duration):
 def measure_throughput_qii(params_generator, duration):
     """
     Misst den Durchsatz für q_ii.
-    Hier wird in jeder Iteration der Datentyp des zweiten Parameters geprüft und
-    der Query-String entsprechend angepasst.
+    q_ii ist polymorph und akzeptiert ANYELEMENT, daher wird hier
+    der Query-String direkt ohne explizite Typ-Casts genutzt.
     """
     conn = psycopg.connect(f"dbname={config.DB_NAME} user={config.DB_USER}")
     conn.autocommit = True
@@ -41,14 +41,7 @@ def measure_throughput_qii(params_generator, duration):
         count = 0
         while time.perf_counter() < end_time:
             attr, val = params_generator()
-            # Bestimme den passenden Type-Cast für p_value:
-            if isinstance(val, int):
-                query = "SELECT * FROM public.q_ii(%s, %s::integer)"
-            elif isinstance(val, str):
-                query = "SELECT * FROM public.q_ii(%s, %s::text)"
-            else:
-                # Falls kein passender Typ ermittelt werden kann, nutze TEXT
-                query = "SELECT * FROM public.q_ii(%s, %s::text)"
+            query = "SELECT * FROM public.q_ii(%s, %s)"
             cur.execute(query, (attr, val))
             _ = cur.fetchall()
             count += 1
@@ -79,10 +72,11 @@ def benchmark_api():
                     check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
                 )
                 
-                # 4. API Benchmark für Query Typ i: SELECT * FROM public.q_i(%s::integer)
+                # 4. API-Benchmark für Query Typ i: Aufruf von q_i mit einer zufälligen OID
                 def params_gen_qi():
                     return (get_random_oid(H),)
-                qps_qi = measure_throughput("SELECT * FROM public.q_i(%s::integer)", params_gen_qi, 10.0)
+                # Expliziter Cast in der Query, um den Parameter als INTEGER zu erzwingen:
+                qps_qi = measure_throughput("SELECT * FROM q_i(CAST(%s AS integer))", params_gen_qi, 10.0)
                 print(f"{H:5d}  {A:4d}  {S:<6.3f}  {'API':>8}  {'q_i':>6}  {qps_qi:18.1f}")
                 results.append({
                     "H": H,
@@ -92,8 +86,8 @@ def benchmark_api():
                     "Throughput": qps_qi
                 })
                 
-                # 5. API Benchmark für Query Typ ii: SELECT * FROM public.q_ii(%s, %s)
-                # Hole 100 zufällige Zeilen aus H_VIEW, um (Attribut, Wert)-Paare zu sammeln.
+                # 5. API-Benchmark für Query Typ ii: Aufruf von q_ii mit einem zufälligen (Attribut, Wert)-Paar.
+                # Hier werden 100 zufällige Zeilen aus H_VIEW geholt, um geeignete (Attribut, Wert)-Paare zu sammeln.
                 conn = psycopg.connect(f"dbname={config.DB_NAME} user={config.DB_USER}")
                 conn.autocommit = True
                 with conn.cursor() as cur:
@@ -124,24 +118,37 @@ def benchmark_api():
                     "API": "q_ii",
                     "Throughput": qps_qii
                 })
-                
-    # Ergebnisse in einem DataFrame zusammenfassen und ausgeben
+
+# Erstelle einen Pandas DataFrame aus den gesammelten Ergebnissen
     df = pd.DataFrame(results)
     print("\nZusammenfassung der API-Benchmark-Ergebnisse:")
     print(df)
-    
-    # Plot: Durchsatzvergleich für q_i und q_ii über verschiedene |H|
-    fig, ax = plt.subplots(figsize=(8, 6))
-    for api in df["API"].unique():
-        sub_df = df[df["API"] == api]
-        group = sub_df.groupby("H")["Throughput"].mean().reset_index()
-        ax.plot(group["H"], group["Throughput"], marker="o", label=f"{api}")
-    ax.set_xlabel("Anzahl der Tupel |H|")
-    ax.set_ylabel("Durchsatz (Queries/s)")
-    ax.set_title("API-Benchmark: Durchsatzvergleich (q_i und q_ii)")
-    ax.legend()
-    ax.grid(True)
-    plt.show()
+
+# --- Facettierte Diagramme für die API-Funktionen q_i und q_ii ---
+    query_types = ['q_i', 'q_ii']
+    A_unique = sorted(df['A'].unique())
+    S_unique = sorted(df['S'].unique())
+
+    for qtype in query_types:
+        fig, axes = plt.subplots(nrows=len(A_unique), ncols=len(S_unique),
+                                figsize=(4 * len(S_unique), 3 * len(A_unique)), squeeze=False)
+        for i, A_val in enumerate(A_unique):
+            for j, S_val in enumerate(S_unique):
+                ax = axes[i][j]
+                # Filtere Daten für die aktuelle API-Funktion, A und S
+                sub_df = df[(df['API'] == qtype) & (df['A'] == A_val) & (df['S'] == S_val)]
+                if not sub_df.empty:
+                    group = sub_df.groupby('H')['Throughput'].mean().reset_index()
+                    ax.plot(group['H'], group['Throughput'], marker='o', label=qtype)
+                ax.set_xlabel("Anzahl Tupel |H|")
+                ax.set_ylabel("Durchsatz (Q/s)")
+                ax.set_title(f"API {qtype} - A={A_val}, S={S_val}")
+                ax.legend()
+                ax.grid(True)
+        fig.suptitle(f"Durchsatzvergleich für API-Funktion {qtype}", fontsize=16)
+        plt.tight_layout(rect=[0, 0.03, 1, 0.95])
+        plt.show()
+
 
 if __name__ == '__main__':
     benchmark_api()
