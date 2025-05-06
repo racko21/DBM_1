@@ -41,16 +41,13 @@ def insert_matrix(conn, table_name: str, matrix: list):
     - table_name: Name der Zieltabelle ('A' oder 'B').
     - matrix: 2D-Liste mit Matrixwerten.
     """
-    # Cursor holen
     with conn.cursor() as cur:
         rows = []
-        # Durch alle Einträge der Matrix iterieren
         for i, row in enumerate(matrix):
             for j, val in enumerate(row):
                 if val != 0 and val is not None:
                     # Nur Nicht-Null-Werte einfügen
                     rows.append((i, j, float(val)))
-        # Alle gesammelten Einträge in einem Rutsch einfügen (executemany)
         cur.executemany(
             f"INSERT INTO {table_name} (i, j, val) VALUES (%s, %s, %s);",
             rows

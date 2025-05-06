@@ -12,14 +12,13 @@ def print_matrix(matrix: list):
 
 if __name__ == "__main__":
     # --- 1. Verbindung zur PostgreSQL-Datenbank herstellen ---
-    # Hinweis: Bitte die Verbindungsparameter anpassen:
     conn = connect_db(dbname=config.DB_NAME, user=config.DB_USER)
 
     # --- 2. Tabellen A und B in der Datenbank erstellen ---
     create_tables(conn)
     print("Tabellen A und B wurden in der Datenbank erstellt.")
 
-    # --- 3. Toy-Beispiel: manuell nachvollziehbare kleine Matrizen mit Nullwerten ---
+    # --- 3. Toy-Beispiel: ---
     toy_A = [
         [2, 0, 3],
         [0, 4, 0]
@@ -34,7 +33,7 @@ if __name__ == "__main__":
     print_matrix(toy_A)
     print("Matrix B:")
     print_matrix(toy_B)
-    # Erwartetes Ergebnis C (bereits manuell berechnet in Beschreibung):
+    # Erwartetes Ergebnis C (manuell berechnet):
     expected_C = [
         [0, 13],
         [28, 0]
@@ -57,8 +56,6 @@ if __name__ == "__main__":
     print("\nAnsatz 1 Ergebnis (aus DB-Query als Liste von Tupeln):")
     for (i, j, val) in result_sql:
         print(f"  (i={i}, j={j}) -> {val}")
-    # Zur besseren Lesbarkeit konvertieren wir die Tupel in eine Matrixdarstellung
-    # (Nur gültig für kleine Matrizen oder wenn vollständige Matrix gewünscht)
     m = len(toy_A)
     n = len(toy_B[0])
     C_sql_matrix = [[0.0 for _ in range(n)] for _ in range(m)]
