@@ -1,3 +1,6 @@
+<?xml version="1.0"?>
+<!DOCTYPE root SYSTEM "C:\Users\betue\OneDrive\Desktop\6.Semester\Datenmangement jenseits von Relationen\Projektaufgabe 3\Project3\dblp.dtd">
+
 <bib>
 	<article mdate="2024-02-05" key="journals/pvldb/SchmittKAMM23">
 		<author orcid="0009-0005-7656-7526">Daniel Ulrich Schmitt</author>
@@ -16,7 +19,7 @@
 		<url>db/journals/pvldb/pvldb16.html#SchmittKAMM23</url>
 	</article>
 	<inproceedings mdate="2022-08-03" key="conf/sigmod/HutterAK0L22">
-		<author>Thomas H&uuml;tter</author>
+		<author>Thomas Hü;tter</author>
 		<author>Nikolaus Augsten</author>
 		<author>Christoph M. Kirsch</author>
 		<author>Michael J. Carey 0001</author>
@@ -33,7 +36,7 @@
 		<author orcid="0009-0005-6572-2228">Konstantin Emil Thiel</author>
 		<author orcid="0009-0003-3742-5555">Daniel Kocher</author>
 		<author orcid="0000-0002-3036-6201">Nikolaus Augsten</author>
-		<author orcid="0000-0002-7190-6825">Thomas H&uuml;tter</author>
+		<author orcid="0000-0002-7190-6825">Thomas Hü;tter</author>
 		<author orcid="0000-0002-6460-6306">Willi Mann</author>
 		<author orcid="0009-0005-7656-7526">Daniel Ulrich Schmitt</author>
 		<title>FINEX: A Fast Index for Exact &amp; Flexible Density-Based Clustering.</title>
@@ -46,9 +49,9 @@
 		<url>db/journals/pacmmod/pacmmod1.html#ThielKAHMS23</url>
 	</article>
 	<article mdate="2024-02-05" key="journals/pvldb/SchalerHS23">
-		<author>Christine Sch&auml;ler</author>
-		<author orcid="0000-0002-7190-6825">Thomas H&uuml;tter</author>
-		<author>Martin Sch&auml;ler</author>
+		<author>Christine Schäler</author>
+		<author orcid="0000-0002-7190-6825">Thomas Hütter</author>
+		<author>Martin Schäler</author>
 		<title>Benchmarking the Utility of w-event Differential Privacy Mechanisms - When Baselines Become Mighty Competitors.</title>
 		<pages>1830-1842</pages>
 		<year>2023</year>
