@@ -1,13 +1,11 @@
-# phase1_xpath_edge.py
-# Phase 1 der Projektaufgabe: Import des Toy-XML in ein EDGE-Modell und Berechnung von XPath-Achsen
-
 import psycopg2
 from lxml import etree
 from collections import defaultdict
 import configparser
+import html
 
 # =====================================
-# KONFIGURATION LADEN AUS config.ini
+# KONFIGURATION LADEN
 # =====================================
 config = configparser.ConfigParser()
 config.read("config.ini")
@@ -20,7 +18,7 @@ DB_PORT = config["postgres"]["port"]
 TOY_XML_PATH = config["files"]["toy_xml_path"]
 
 # =====================================
-# NODE-KLASSE FÜr BAUMSTRUKTUR
+# VEREINHEITLICHTE NODE-KLASSE
 # =====================================
 class Node:
     _id_counter = 0
@@ -42,8 +40,16 @@ class Node:
             cursor.execute("INSERT INTO edge (from_id, to_id) VALUES (%s, %s)", (self.id, child.id))
             child.to_edge_model(cursor)
 
+    def __repr__(self, level=0):
+        indent = "  " * level
+        content = f": {self.content}" if self.content else ""
+        result = f"{indent}Node({self.tag}{content})\n"
+        for child in self.children:
+            result += child.__repr__(level + 1)
+        return result
+
 # =====================================
-# DATENBANK TABELLEN FÜr EDGE MODELL
+# DB-TABELLEN ERSTELLEN
 # =====================================
 def setup_db(conn):
     cur = conn.cursor()
@@ -66,20 +72,41 @@ def setup_db(conn):
     conn.commit()
 
 # =====================================
-# XML PARSEN UND TRANSFORMATION
+# XML PARSEN UND BAUM AUFBAUEN
 # =====================================
+
 def parse_and_transform(file_path):
-    tree = etree.parse(file_path)
-    root = tree.getroot()
+    # Datei einlesen und Entities wie &auml ersetzen
+    with open(file_path, "r", encoding="utf-8") as f:
+        raw_xml = f.read()
+
+    replacements = {
+        "&auml;": "ä", "&Auml;": "Ä",
+        "&ouml;": "ö", "&Ouml;": "Ö",
+        "&uuml;": "ü", "&Uuml;": "Ü",
+        "&szlig;": "ß",
+        "&nbsp;": " ",
+        "&amp;": "&",
+        "&quot;": "\"",
+        "&lt;": "<",
+        "&gt;": ">",
+    }
+    for entity, char in replacements.items():
+        raw_xml = raw_xml.replace(entity, char)
+                  
+    decoded_xml = html.unescape(raw_xml)
+    parser = etree.XMLParser(recover=True, encoding='utf-8')
+    root = etree.fromstring(decoded_xml.encode("utf-8"), parser)
 
     bib_node = Node("bib")
     venues = defaultdict(lambda: defaultdict(list))
 
     for pub in root:
-        key = pub.attrib.get("key", "")
+        key = pub.attrib.get("key", "").lower()
         year = pub.findtext("year")
         if not year:
             continue
+
         if "vldb" in key:
             venue = "vldb"
         elif "sigmod" in key:
@@ -88,6 +115,7 @@ def parse_and_transform(file_path):
             venue = "icde"
         else:
             continue
+
         venues[venue][year].append(pub)
 
     for venue, years in venues.items():
@@ -100,12 +128,17 @@ def parse_and_transform(file_path):
                 pub_node = Node(pub.tag)
                 year_node.add_child(pub_node)
                 for elem in pub:
-                    if elem.tag in {"author", "title", "pages", "year", "volume", "journal", "number", "ee", "url", "booktitle"}:
-                        pub_node.add_child(Node(elem.tag, elem.text))
+                    if elem.tag in {
+                        "author", "title", "pages", "year", "volume", "journal",
+                        "number", "ee", "url", "booktitle"
+                    }:
+                        if elem.text:
+                            decoded_text = html.unescape(elem.text.strip())
+                            pub_node.add_child(Node(elem.tag, decoded_text))
     return bib_node
 
 # =====================================
-# XML-BAUMSTRUKTUR IN DIE DB EINTRAGEN
+# IN DIE DATENBANK IMPORTIEREN
 # =====================================
 def import_to_db(root_node, conn):
     cur = conn.cursor()
@@ -113,7 +146,7 @@ def import_to_db(root_node, conn):
     conn.commit()
 
 # =====================================
-# XPATH-ACHSEN FUNKTIONEN
+# XPATH-ACHSEN-FUNKTIONEN
 # =====================================
 def get_ancestors(conn, node_id):
     query = """
@@ -164,7 +197,7 @@ def get_siblings(conn, node_id, direction="following"):
     return cur.fetchall()
 
 # =====================================
-# HAUPTFUNKTION
+# HAUPTPROGRAMM
 # =====================================
 def main():
     conn = psycopg2.connect(
